@@ -19,6 +19,7 @@ class CadastroView:
         self.cache = cache_service
         self.registro_service = RegistroService(cache_service)
         self.firebase = FirebaseManager()
+        self.ranking_service = RankingService()
 
         self.cad_controle = ft.TextField(label="Controle")
         self.cad_cliente = ft.TextField(label="Cliente")
@@ -34,6 +35,11 @@ class CadastroView:
         )
         self.cad_volume = ft.TextField(label="Volume")
         self.msg_cadastro = ft.Text()
+        
+        # Produtividade por andar
+        self.prod_andar1 = ft.Column()
+        self.prod_andar2 = ft.Column()
+        self.prod_andar3 = ft.Column()
 
     def _select_conferente(self, valor):
         """Callback ao selecionar conferente"""
@@ -63,11 +69,85 @@ class CadastroView:
             self.cad_conferente_field.limpar()
             self.cad_box_field.limpar()
             self.cache.carregar_registros()
+            self._atualizar_produtividade()
 
         self.page.update()
 
+    def _atualizar_produtividade(self):
+        """Atualiza a exibição de produtividade por andar"""
+        ranking_conf, inicio, fim = self.ranking_service.calcular_ranking_conferentes()
+        
+        # Andar 1
+        self.prod_andar1.controls.clear()
+        self.prod_andar1.controls.append(
+            ft.Container(
+                padding=15,
+                border_radius=12,
+                bgcolor="#DBEAFE",
+                content=ft.Column([
+                    ft.Text("📍 Andar 1", size=16, weight="bold", color="#1D4ED8"),
+                    ft.Divider(height=10),
+                    *self._criar_cards_produtividade(ranking_conf, 0, 3, "#FEF3C7", "#E5E7EB", "#FECACA")
+                ])
+            )
+        )
+        
+        # Andar 2
+        self.prod_andar2.controls.clear()
+        self.prod_andar2.controls.append(
+            ft.Container(
+                padding=15,
+                border_radius=12,
+                bgcolor="#DBEAFE",
+                content=ft.Column([
+                    ft.Text("📍 Andar 2", size=16, weight="bold", color="#1D4ED8"),
+                    ft.Divider(height=10),
+                    *self._criar_cards_produtividade(ranking_conf, 3, 6, "#FEF3C7", "#E5E7EB", "#FECACA")
+                ])
+            )
+        )
+        
+        # Andar 3
+        self.prod_andar3.controls.clear()
+        self.prod_andar3.controls.append(
+            ft.Container(
+                padding=15,
+                border_radius=12,
+                bgcolor="#DBEAFE",
+                content=ft.Column([
+                    ft.Text("📍 Andar 3", size=16, weight="bold", color="#1D4ED8"),
+                    ft.Divider(height=10),
+                    *self._criar_cards_produtividade(ranking_conf, 6, 9, "#FEF3C7", "#E5E7EB", "#FECACA")
+                ])
+            )
+        )
+
+    def _criar_cards_produtividade(self, ranking, inicio, fim, cor1, cor2, cor3):
+        """Cria cards de produtividade para um intervalo"""
+        cards = []
+        cores = [cor1, cor2, cor3]
+        
+        for i, (nome, total) in enumerate(ranking[inicio:fim], start=1):
+            medalha = "🥇" if i == 1 else ("🥈" if i == 2 else "🥉")
+            cards.append(
+                ft.Container(
+                    padding=10,
+                    border_radius=8,
+                    bgcolor=cores[i - 1],
+                    content=ft.Row([
+                        ft.Text(f"{medalha} {i}º", size=14, weight="bold"),
+                        ft.Text(nome, expand=True, size=14),
+                        ft.Text(f"{total} reg.", size=12, weight="bold")
+                    ])
+                )
+            )
+        
+        return cards if cards else [ft.Text("Sem dados", color="gray", size=12)]
+
     def obter_view(self):
         """Retorna a view"""
+        self._atualizar_produtividade()
+        
         return ft.Column([
             ft.Text("Cadastro", size=22, weight="bold"),
             self.cad_controle,
@@ -76,8 +156,13 @@ class CadastroView:
             self.cad_box_field.obter_container(),
             self.cad_volume,
             ft.ElevatedButton("Salvar", on_click=self._salvar),
-            self.msg_cadastro
-        ])
+            self.msg_cadastro,
+            ft.Divider(),
+            ft.Text("📊 Produtividade", size=18, weight="bold"),
+            self.prod_andar1,
+            self.prod_andar2,
+            self.prod_andar3
+        ], scroll="auto")
 
 
 class SeparacaoView:
