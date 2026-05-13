@@ -166,7 +166,7 @@ class CadastroView:
 
 
 class SeparacaoView:
-    """View de Separação - Contar apenas por NOTAS"""
+    """View de Separação - Contar apenas por NOTAS com ANDAR"""
 
     def __init__(self, page, cache_service: CacheService):
         self.page = page
@@ -177,6 +177,15 @@ class SeparacaoView:
             "Separador",
             self.cache.separadores,
             self._select_separador
+        )
+        self.sep_andar = ft.Dropdown(
+            label="Andar",
+            options=[
+                ft.dropdown.Option("1"),
+                ft.dropdown.Option("2"),
+                ft.dropdown.Option("3")
+            ],
+            width=150
         )
         self.sep_notas = ft.TextField(
             label="Notas",
@@ -192,6 +201,7 @@ class SeparacaoView:
         """Salva nova separação"""
         sucesso, msg = self.separacao_service.salvar_separacao(
             self.sep_separador_field.obter_valor(),
+            self.sep_andar.value,
             self.sep_notas.value
         )
 
@@ -200,6 +210,7 @@ class SeparacaoView:
 
         if sucesso:
             self.sep_notas.value = ""
+            self.sep_andar.value = None
             self.sep_separador_field.limpar()
 
         self.page.update()
@@ -209,6 +220,7 @@ class SeparacaoView:
         return ft.Column([
             ft.Text("Separação", size=22, weight="bold"),
             self.sep_separador_field.obter_container(),
+            self.sep_andar,
             self.sep_notas,
             ft.ElevatedButton("Salvar Separação", on_click=self._salvar),
             self.msg_sep
